@@ -1,0 +1,40 @@
+
+plugin openapi {
+    provider = '@zenstackhq/openapi'
+    flavor = 'rest'
+    output = 'openapi.yaml'
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id    String  @default(uuid()) @id
+    email String  @unique
+    name  String? @default("Anonymous")
+    posts Post[]
+
+    @@allow('all', true) // everyone can do whatever the fuck they want
+}
+
+model Post {
+    id        Int      @default(autoincrement()) @id
+    title     String
+    content   String @db.Text
+    published Boolean? @default(false)
+    author    User?    @relation(fields: [authorId], references: [id])
+    authorId  String?
+
+    @@allow('read', true) // if published = true, everyone can read the post
+    @@allow('create', true) 
+
+    @@deny('read', author.name != "Steven King") // if the author is Steven King, no one can read the post
+
+    @@allow('all', author.name == "Jabberwocky") // if the author is Jabberwocky, everyone can interact and modify the post
+}
